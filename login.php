@@ -1,4 +1,29 @@
-<?php include "functions.php"; ?>
+<?php
+include "functions.php";
+session_start();
+
+$notif = null;
+if (isset($_POST['username']) && isset($_POST['password'])) {
+    $user = $_POST['username'];
+    $pass = $_POST['password'];
+    $salt = "XDrBmrW9g2fb";
+    $pdo = pdo_connect();
+    $hashed_pass = hash('sha256', $pass . $salt);
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE username = :username AND password = :password LIMIT 1');
+    $stmt->execute([
+        ':username' => $user,
+        ':password' => $hashed_pass
+    ]);
+    if ($stmt->rowCount() > 0) {
+        session_regenerate_id(true);
+        $_SESSION['user'] = $user;
+        header("location: index.php");
+        exit;
+    } else {
+        $notif = "Damn, wrong credentials!!";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,27 +34,6 @@
     <title>Login</title>
 </head>
 <body class="text-center">
-    <?php
-    $notif = null;
-    if (isset($_POST['username']) && isset($_POST['password'])) {
-
-        session_start();
-        $user = $_POST['username'];
-        $pass = $_POST['password'];
-        $salt = "XDrBmrW9g2fb";
-        $pdo = pdo_connect();
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE username = "' . $user . '" AND password = "' . hash('sha256', $pass . $salt) . '" LIMIT 1');
-        $stmt->execute();
-        $notif = $stmt->rowCount();
-        if ($stmt->rowCount() > 0) {
-            $_SESSION['user'] = $user;
-            header("location: index.php");
-        } else {
-            $notif = "Damn, wrong credentials!!";
-        }
-    }
-
-    ?>
     <form class="form-signin" method="POST">
         <h1 class="h3 mb-3 font-weight-normal">Damn, sign in!</h1>
         <label for="inputUsername" class="sr-only">Username</label>

@@ -1,0 +1,62 @@
+name: Selenium CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ""
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: damncrud
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: pdo, pdo_mysql
+
+      - name: Import database
+        run: mysql -h 127.0.0.1 -u root damncrud < DamnCRUD/db/damncrud.sql
+
+      - name: Start PHP built-in server
+        run: |
+          cd DamnCRUD
+          php -S localhost:8000 &
+          sleep 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install selenium pytest
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run Selenium tests with Pytest
+        working-directory: DamnCRUD
+        run: pytest test_selenium.py -v
+        env:
+          CI: "true"
