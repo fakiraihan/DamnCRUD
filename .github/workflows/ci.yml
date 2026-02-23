@@ -41,7 +41,9 @@ jobs:
       - name: Start PHP built-in server
         run: |
           php -S localhost:8000 &
-          sleep 2
+          sleep 3
+        env:
+          DB_HOST: 127.0.0.1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -58,3 +60,4 @@ jobs:
         run: pytest test_selenium.py -v
         env:
           CI: "true"
+          DB_HOST: 127.0.0.1
